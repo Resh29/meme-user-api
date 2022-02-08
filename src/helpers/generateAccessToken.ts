@@ -6,3 +6,9 @@ export const generateAccessToken = (
 ): string => {
   return jwt.sign(payload, secret);
 };
+export const verifyAccessToken = (
+  token: string,
+  options: jwt.DecodeOptions,
+) => {
+  return jwt.decode(token, options);
+};

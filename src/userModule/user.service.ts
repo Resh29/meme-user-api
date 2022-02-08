@@ -1,5 +1,8 @@
 import { ReturnUserDto } from './user/user-return.dto';
-import { generateAccessToken } from './../helpers/generateAccessToken';
+import {
+  generateAccessToken,
+  verifyAccessToken,
+} from './../helpers/generateAccessToken';
 import { SALT, SECRET } from './user/user.options';
 import {
   generateHashString,
@@ -46,26 +49,49 @@ export class UserService {
       };
     }
   }
-  async login(loginUserDto: UserLoginDto): Promise<any> {
-    const user: User = await this.userModel.findOne({
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-ignore: Unreachable code error
-      email: loginUserDto.email,
-    });
-    if (user) {
-      if (compareHashPassword(loginUserDto.password, user.password)) {
-        const result: ReturnUserDto = {
-          name: user.name,
-          token: user.token,
-          memesCollection: user.memesCollection,
-          id: user._id,
-        };
-        return result;
+  async login(loginUserDto: UserLoginDto, token: string): Promise<any> {
+    try {
+      if (token) {
+        const userEmail = verifyAccessToken(token, {});
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        //@ts-ignore
+        if (userEmail.email) {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          //@ts-ignore
+          const user = await this.userModel.findOne({ email: userEmail.email });
+          const result = {
+            email: user.email,
+            id: user._id,
+            memesCollection: user.memesCollection,
+          };
+          return result;
+        } else {
+          return;
+        }
       } else {
-        throw new HttpException('USER_NOT_FOUND', HttpStatus.NOT_FOUND);
+        const user: User = await this.userModel.findOne({
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore: Unreachable code error
+          email: loginUserDto.email,
+        });
+        if (user) {
+          if (compareHashPassword(loginUserDto.password, user.password)) {
+            const result: ReturnUserDto = {
+              name: user.name,
+              token: user.token,
+              memesCollection: user.memesCollection,
+              id: user._id,
+            };
+            return result;
+          } else {
+            throw new HttpException('USER_NOT_FOUND', HttpStatus.NOT_FOUND);
+          }
+        } else {
+          throw new HttpException('USER_NOT_FOUND', HttpStatus.NOT_FOUND);
+        }
       }
-    } else {
-      throw new HttpException('USER_NOT_FOUND', HttpStatus.NOT_FOUND);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 }
