@@ -14,6 +14,7 @@ import { UserDto } from './user/user.dto';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { MemeObject } from './user-schemas/user.schema'
 
 @Injectable()
 export class UserService {
@@ -50,6 +51,7 @@ export class UserService {
     }
   }
   async login(loginUserDto: UserLoginDto, token: string): Promise<any> {
+    console.log('We hehre')
     try {
       if (token) {
         const userEmail = verifyAccessToken(token, {});
@@ -92,6 +94,50 @@ export class UserService {
       }
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+  async authByToken(token: string): Promise<any> {
+    try {
+       const userTokenDecoded = verifyAccessToken(token, {})
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    // @ts-ignore: Unreachable code error
+    const user = await this.userModel.findOne({email: userTokenDecoded.email})
+    return {email: user.email, id: user._id, memesCollection: user.memesCollection}
+    } catch (e) {
+      throw new HttpException(e.message, e.code)
+    }
+    
+  }
+  async saveMemesToCollection(id: string, meme: MemeObject): Promise<any> {
+    try {
+       const user = await this.userModel.findById(id);
+       const isMemeExists =  user.memesCollection.find(m => m.url === meme.url);
+       if(isMemeExists) {
+         throw new Error('Meme is already exists in your collection!');
+       } else {
+         user.memesCollection.push(meme);
+        await user.save();
+        return {message: 'Meme adding to your collection!'}
+       }  
+    
+  } catch (e) {
+    throw new HttpException(e.message, e.code)
+  }
+  }
+  async removeMemeFromCollection(id:string, memeID: string) {
+    try {
+      const user = await this.userModel.findById(id);
+      const isExist = user.memesCollection.some(m => m.id === memeID);
+      if(isExist) {
+        user.memesCollection = user.memesCollection.filter(m => m.id !== memeID);
+       return  await user.save();
+        // return {message: 'Meme has been removed from your collection!'}
+      } else {
+        return {message: 'Meme not found!'}
+      }
+      
+    } catch (e) {
+      return new HttpException(e.message, e.code)
     }
   }
 }

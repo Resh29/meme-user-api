@@ -1,26 +1,38 @@
 import { UserLoginDto } from './user/user-login.dto';
 import { UserDto } from './user/user.dto';
 import { UserService } from './user.service';
-import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
+import { Body, Controller, Get, Headers, Post, Param, Delete } from '@nestjs/common';
 import { IncomingHttpHeaders } from 'http2';
-@Controller()
+import {MemeObject} from './user-schemas/user.schema'
+@Controller('/meme-api')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get('/meme-api')
+  @Get('/')
   getUserData(): string {
     return this.userService.getUserDataObject();
   }
-  @Post('/meme-api/registration')
+  @Post('/registration')
   async registration(@Body() userDto: UserDto): Promise<any> {
     return await this.userService.createNewUser(userDto);
   }
-  @Get('/meme-api/login')
+  @Post('/login')
   async login(
     @Body() userLoginDto: UserLoginDto,
-    @Headers() headers: IncomingHttpHeaders,
-  ): Promise<any> {
-    const token = headers.authorization.replace('Bearer ', '');
-    return this.userService.login(userLoginDto, token);
+  ): Promise<any> { 
+     return this.userService.login(userLoginDto, '');
+  }
+  @Post('/auth') 
+  async getUserByToken(@Headers() headers: IncomingHttpHeaders): Promise<any> {
+      const token = headers.authorization.replace('Bearer ', '');
+    return this.userService.authByToken(token);
+  }
+  @Post('/save/:id')
+  async saveMemes(@Param() {id}, @Body() meme: MemeObject) {
+      return this.userService.saveMemesToCollection(id, meme);
+  }
+  @Delete('/delete/:id')
+  async deleteMeme(@Param() {id}, @Body() meme: MemeObject) {
+    return this.userService.removeMemeFromCollection(id, meme.id);
   }
 }
