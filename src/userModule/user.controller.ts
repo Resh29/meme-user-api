@@ -14,13 +14,15 @@ export class UserController {
   }
   @Post('/registration')
   async registration(@Body() userDto: UserDto): Promise<any> {
+    console.log(userDto);
     return await this.userService.createNewUser(userDto);
   }
   @Post('/login')
   async login(
     @Body() userLoginDto: UserLoginDto,
   ): Promise<any> { 
-     return this.userService.login(userLoginDto, '');
+    console.log(userLoginDto)
+     return this.userService.login(userLoginDto);
   }
   @Post('/auth') 
   async getUserByToken(@Headers() headers: IncomingHttpHeaders): Promise<any> {
@@ -34,5 +36,9 @@ export class UserController {
   @Delete('/delete/:id')
   async deleteMeme(@Param() {id}, @Body() meme: MemeObject) {
     return this.userService.removeMemeFromCollection(id, meme.id);
+  }
+  @Get('/memes-collection/:id')
+  async getMemesCollectionByUserId(@Param() {id}): Promise<any> {
+    return this.userService.getMemesCollection(id);
   }
 }

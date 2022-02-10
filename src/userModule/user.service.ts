@@ -45,32 +45,12 @@ export class UserService {
       return {
         name: result.name,
         token: result.token,
-        memesCollection: result.memesCollection,
         id: result._id,
       };
     }
   }
-  async login(loginUserDto: UserLoginDto, token: string): Promise<any> {
-    console.log('We hehre')
+  async login(loginUserDto: UserLoginDto): Promise<any> {
     try {
-      if (token) {
-        const userEmail = verifyAccessToken(token, {});
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        if (userEmail.email) {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          //@ts-ignore
-          const user = await this.userModel.findOne({ email: userEmail.email });
-          const result = {
-            email: user.email,
-            id: user._id,
-            memesCollection: user.memesCollection,
-          };
-          return result;
-        } else {
-          return;
-        }
-      } else {
         const user: User = await this.userModel.findOne({
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore: Unreachable code error
@@ -81,7 +61,6 @@ export class UserService {
             const result: ReturnUserDto = {
               name: user.name,
               token: user.token,
-              memesCollection: user.memesCollection,
               id: user._id,
             };
             return result;
@@ -91,7 +70,6 @@ export class UserService {
         } else {
           throw new HttpException('USER_NOT_FOUND', HttpStatus.NOT_FOUND);
         }
-      }
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
@@ -102,7 +80,7 @@ export class UserService {
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore: Unreachable code error
     const user = await this.userModel.findOne({email: userTokenDecoded.email})
-    return {email: user.email, id: user._id, memesCollection: user.memesCollection}
+    return {email: user.email, id: user._id, token: user.token};
     } catch (e) {
       throw new HttpException(e.message, e.code)
     }
@@ -127,17 +105,27 @@ export class UserService {
   async removeMemeFromCollection(id:string, memeID: string) {
     try {
       const user = await this.userModel.findById(id);
-      const isExist = user.memesCollection.some(m => m.id === memeID);
+      const isExist = user.memesCollection.find(m => m.id === memeID);
+      console.log(memeID)
       if(isExist) {
+        
         user.memesCollection = user.memesCollection.filter(m => m.id !== memeID);
-       return  await user.save();
-        // return {message: 'Meme has been removed from your collection!'}
+       await user.save();
+        return {message: 'Meme has been removed from your collection!'}
       } else {
         return {message: 'Meme not found!'}
       }
       
     } catch (e) {
       return new HttpException(e.message, e.code)
+    }
+  }
+  async getMemesCollection(id: string): Promise<any> {
+    try {
+      const user = await this.userModel.findById(id);
+      return user.memesCollection;
+    } catch (e) {
+      throw new HttpException(e.message, e.code);
     }
   }
 }
